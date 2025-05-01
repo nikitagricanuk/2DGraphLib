@@ -87,7 +87,6 @@ Glib* buildTree(const std::string& eq,
 
     std::string func = getFunction(eq);
     if (!func.empty()) {
-        std::cout << "Function " << func << " found!\n";
         Glib *funcNode = new Glib(func, Glib::Type::Function, current);
         g_allNodes.push_back(funcNode);
         if(!current->left) {
@@ -107,19 +106,18 @@ Glib* buildTree(const std::string& eq,
 
     std::string num = getNumber(eq);
     if (!num.empty()) {
-        std::cout << "Number " << num << " found!\n";
         Glib* numNode = new Glib(num, Glib::Type::Number);
         g_allNodes.push_back(numNode);
 
         if (current) {
-            /* attach to an operator expecting its left / right operand */
+            // attach to an operator expecting its left / right operand 
             if (current->type == Glib::Type::Operator) {
                 if (!current->left)  { current->left  = numNode; numNode->parent = current; }
                 else                 { current->right = numNode; numNode->parent = current; }
-                /* continue parsing from the *operator* (not the new number) */
+                // continue parsing from the *operator* (not the new number) 
                 return buildTree(eq.substr(num.size()), numNode, parenthesis);
             }
-            /* attach as the argument of a function such as sin(...) */
+            // attach as the argument of a function such as sin(...) 
             if (current->type == Glib::Type::Function && !current->left) {
                 current->left = numNode;
                 numNode->parent = current;
@@ -152,22 +150,30 @@ Glib* buildTree(const std::string& eq,
 
     std::string op = getOperator(eq);
     if (!op.empty()) {
-        std::cout << "Operator " << op << " found!\n";
         if (!current) throw std::runtime_error("buildTree: expression cannot start with an operator");
 
-        /* new operator becomes parent of the subtree rooted at `current` */
-        Glib* parentNode = current->parent;
-        Glib* opNode = new Glib(op, Glib::Type::Operator, parentNode, current);
-        g_allNodes.push_back(opNode);
-
-        /* splice opNode into the parent */
-        if (parentNode) {
-            if (parentNode->left  == current) parentNode->left  = opNode;
-            if (parentNode->right == current) parentNode->right = opNode;
+        // Walk up while the operators we pass have *higher or equal* precedence.
+        // We stop at the first operator that is strictly lower.               
+        Glib* attach = current;
+        while (attach->parent
+            && attach->parent->type == Glib::Type::Operator
+            && getPriority(attach->parent->data) >= getPriority(op))
+        {
+            attach = attach->parent;
         }
 
-        current->parent = opNode;
+        // Insert the new operator just *above* that “attach” node 
+        Glib* parentNode = attach->parent;
+        Glib* opNode     = new Glib(op, Glib::Type::Operator, parentNode, attach);
+        g_allNodes.push_back(opNode);
 
+        if (parentNode) {                       // splice into parent
+            if (parentNode->left  == attach) parentNode->left  = opNode;
+            else                              parentNode->right = opNode;
+        }
+        attach->parent = opNode;
+
+        // Continue parsing with new operator as the current node 
         return buildTree(eq.substr(op.size()), opNode, parenthesis);
     }
 
@@ -214,6 +220,7 @@ double compute(Glib *tree, std::vector<std::pair<std::string, double>> variables
         if(tree->data == "sin") return sin(arg);
         else if(tree->data == "cos") return cos(arg);
         else if(tree->data == "tan") return tan(arg);
+        throw std::runtime_error("Unknown function " + tree->data);
     }
     else if(tree->type == Glib::Type::Operator) {
         double left = compute(tree->left, variables);
@@ -222,7 +229,10 @@ double compute(Glib *tree, std::vector<std::pair<std::string, double>> variables
         else if(tree->data == "-") return left - right;
         else if(tree->data == "*") return left * right;
         else if(tree->data == "/") return left / right;
+        throw std::runtime_error("Unknown operator " + tree->data);
     }
+    else 
+        throw std::runtime_error("buildTree: unexpected token near node with address " + std::to_string(reinterpret_cast<std::uintptr_t>(tree)));
 }
 
 void printTree(Glib *root, std::string prefix, bool isLeft) {
