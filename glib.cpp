@@ -188,22 +188,36 @@ void debugPrintNodes()
     std::cout << "=============================================\n";
 }
 
-double compute(Glib *tree, double variable) {
+double compute(Glib *tree, std::vector<std::pair<std::string, double>> variables) {
     if(tree->type == Glib::Type::Number) {
         return std::stod(tree->data);
     }
     else if(tree->type == Glib::Type::Variable) {
-        return variable;
+        // 1. Find the variable in the vector
+        auto it = std::find_if(variables.begin(), variables.end(),
+            [&tree](const std::pair<std::string, double>& var) {
+                return var.first == tree->data;
+            });
+        // 2. If found, return its value
+        if(it != variables.end()) {
+            return it->second;
+        }
+        // 3. If not found, throw an error
+        else {
+            throw std::runtime_error("Variable " + tree->data + " not found in the provided variables.");
+        }
     }
     else if(tree->type == Glib::Type::Function) {
-        double arg = compute(tree->left, variable);
+        double arg = compute(tree->left, variables);
+        // Convert degrees to radians
+        arg = arg * M_PI / 180.0;
         if(tree->data == "sin") return sin(arg);
         else if(tree->data == "cos") return cos(arg);
         else if(tree->data == "tan") return tan(arg);
     }
     else if(tree->type == Glib::Type::Operator) {
-        double left = compute(tree->left, variable);
-        double right = compute(tree->right, variable);
+        double left = compute(tree->left, variables);
+        double right = compute(tree->right, variables);
         if(tree->data == "+") return left + right;
         else if(tree->data == "-") return left - right;
         else if(tree->data == "*") return left * right;

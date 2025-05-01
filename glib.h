@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 std::string getFunction(std::string substr);
 std::string getNumber(const std::string &substr);
@@ -30,4 +31,4 @@ struct Glib
 Glib* buildTree(const std::string& eq,
     Glib*              current   = nullptr,
     bool               parenthesis = false);
-double compute(Glib *tree, double variable);
+double compute(Glib *tree, std::vector<std::pair<std::string, double>> variables);
