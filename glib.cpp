@@ -251,3 +251,22 @@ void printTree(Glib *root, std::string prefix, bool isLeft) {
         printTree(root->right, newPrefix, false);
     }
 }
+
+std::vector<std::pair<double, double>> computeOnRange(Glib *tree, std::vector<std::pair<std::string, double>> variables, double start, double end, double step) {
+    std::vector<std::pair<double, double>> results;
+    for (double x = start; x <= end; x += step) {
+        // Remove any existing "x" variable from the vector
+        variables.erase(
+            std::remove_if(variables.begin(), variables.end(),
+                [](const std::pair<std::string, double>& var) {
+                    return var.first == "x";
+                }),
+            variables.end());
+        variables.push_back({"x", x});
+        
+        auto& x_var = variables.back(); // Direct reference to the just-added "x" variable
+        double y = compute(tree, variables);
+        results.push_back({x_var.second, y});
+    }
+    return results;
+}
