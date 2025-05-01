@@ -5,7 +5,7 @@
 #include <vector>
 #include <cmath>
 
-std::vector<Glib*> g_allNodes;   // defined once here
+std::vector<Glib*> g_allNodes;   // This variable contains all created nodes' addresses. For debug purpose only.
 
 std::string getFunction(std::string substr) {
     int i = 0;
@@ -38,7 +38,7 @@ std::string getNumber(const std::string &str) {
 
 std::string getOperator(const std::string &str) {
     char op = str[0];
-    if(op == '^' || op == '*' || op == '/' || op == '+' || op == '-') return str.substr(0, 1);
+    if(op == '*' || op == '/' || op == '+' || op == '-') return str.substr(0, 1);
     return "";
 }
 
@@ -222,6 +222,22 @@ double compute(Glib *tree, std::vector<std::pair<std::string, double>> variables
         else if(tree->data == "-") return left - right;
         else if(tree->data == "*") return left * right;
         else if(tree->data == "/") return left / right;
-        else if(tree->data == "^") return pow(left, right);
+    }
+}
+
+void printTree(Glib *root, std::string prefix, bool isLeft) {
+    if (root == nullptr) return; // If we've reached the end
+    
+    std::cout << prefix; // Print the prefix
+    std::cout << (isLeft ? "├── " : "└── "); // Then print the graphic element depending on child location
+    std::cout << "[" << root->data << "]" << std::endl; // And print the data
+
+    // Make new prefix for children
+    std::string newPrefix = prefix + (isLeft ? "│   " : "    ");
+
+    // Recursively print left and right children
+    if (root->left || root->right) { // Only print if at least one child exists
+        printTree(root->left, newPrefix, true); 
+        printTree(root->right, newPrefix, false);
     }
 }

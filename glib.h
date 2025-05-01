@@ -32,3 +32,4 @@ Glib* buildTree(const std::string& eq,
     Glib*              current   = nullptr,
     bool               parenthesis = false);
 double compute(Glib *tree, std::vector<std::pair<std::string, double>> variables);
+void printTree(Glib *root, std::string prefix = "", bool isLeft = true);
